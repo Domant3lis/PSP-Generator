@@ -3,7 +3,8 @@
 This is a tool to generate PSP (Personal software process) markdown and csv documents from git commits.
 
 ## Dependencies
-`ruby` `git` [`git gem`](https://rubygems.org/gems/git) and [`csv2md`](https://rubygems.org/gems/csv2md)
+`ruby`, `git` 
+Ruby gems: [`git`](https://rubygems.org/gems/git), [`csv2md`](https://rubygems.org/gems/csv2md), [`csv_shaper`](https://rubygems.org/gems/csv_shaper)
 
 ## Usage
 This tool assumes that commits are made often and each small improvement is in a separate commit
