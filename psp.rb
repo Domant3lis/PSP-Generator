@@ -1,10 +1,18 @@
 require 'optparse'
-require 'csv'
 require 'set'
 require 'git'
+require 'csv_shaper'
 require 'csv2md'
 
-options = { :from => 0, :till => 100, :markdown => 'psp.md', :csv => 'psp.csv'}
+options = { 
+  :from => 0, 
+  :till => 100,
+  :markdown => 'psp.md',
+  :csv => nil,
+  :markdown_out => nil,
+  :csv_out => nil,
+}
+
 OptionParser.new do |parser|
   parser.banner = "Usage: example.rb [options]"
 
@@ -24,14 +32,18 @@ OptionParser.new do |parser|
     options[:markdown] = arg
   end
 
-  parser.on("-cFILEPATH", "--csv=FILEPATH", "Specify where to export the csv file, default './psp.csv'") do |arg|
+  parser.on("-cFILEPATH", "--csv=FILEPATH", "Specify where to export the csv file, by default it isn't exported") do |arg|
     options[:csv] = arg
   end
 
-  # TODO
-  # parser.on("-no", "--no-output", "Doesn't display the markdown output before generating it") do |arg|
-  #   options[:no_output] = arg
-  # end
+  parser.on("-dm", "--display-markdown", "Displays markdown output to stdout") do
+    options[:markdown_out] = :stdout
+  end
+
+  parser.on("-dc", "--display-csv", "Displays cvs output to stdout") do
+    options[:csv_out] = :stdout
+  end
+
 end.parse!
 
 begin
@@ -50,27 +62,21 @@ data = []
 
 # Finds all headers and data
 logs[options[:from]..options[:till]].each do |log|
-  puts "LOG_MSG: " + log.message
 
   if log.commit?
-    puts "LOG_MSG?: " + log.message
     row = Hash.new()
 
-    # For now, do not change the order, or else it will mess up the output
     row["Date"] = log.committer_date.to_s[5..9]
-    row["From"] = ""
     row["Till"] = log.committer_date.to_s[11..15]
-    row["Interruptions"] = ""
     row["Overall"] = "TODO"
-    row["Action"] = ""
-    row["Details"] = ""
     row["Changes"] = "-#{ log.diff_parent.deletions.to_int.to_s } +#{ log.diff_parent.lines.to_int.to_s } ~#{ log.diff_parent.insertions.to_int.to_s }"
 
     # PSP parsing
-    psp = log.message.split("--- PSP ---")[1]
-    if psp
-      row["Details"] = log.message.split("--- PSP ---")[0].split("\n").join(" ")
-      fields = psp.split("\n")
+    commit_msg = log.message.split("--- PSP ---")
+    row["Details"] = commit_msg[0].split("\n").join(" ")
+
+    if commit_msg[1]
+      fields = commit_msg[1].split("\n")
 
       fields[1..].each do |field|
         key = field.split(":")[0]
@@ -88,31 +94,57 @@ logs[options[:from]..options[:till]].each do |log|
         end
 
       end
-
-    else
-      row["Details"] = log.message.split("--- PSP ---")[0].sub("\n", " ")
     end
 
     data.push(row)
   end
 end
 
-header = header - [nil] 
-# pp data
+header = header - [nil]
 
-# Constructs CSV file from collected data
-csv_string = CSV.generate do |csv|
-  csv << header.to_a
-  data.each do |row|
-    csv << row.values
+# # This is, as of yet, not supported,
+# # because `csv2md` cannot deal with
+# # other separators
+# 
+# CsvShaper.configure do |config|
+#   config.col_sep = "\t"
+# end
+
+# Builds a cvs out of data
+csv = CsvShaper::Shaper.new
+
+# Builds a header
+csv.headers header do |csv, head|
+  header.each do |head|
+    csv.columns head
   end
 end
 
-markdown = Csv2md.new(csv_string)
-p markdown.gfm
+# Builds the rest of data
+data.each do |data_row|
+  csv.row do |csv|
+    data_row.each do |data_cell|
+      csv.cell data_cell[0], data_cell[1]
+    end
+  end
+end
+
+csv_string = csv.to_csv
+markdown_string = Csv2md.new(csv_string).gfm
+
+if options[:csv_out]
+  puts csv_string
+end
+
+if options[:markdown_out]
+  puts markdown_string
+end
+
+if options[:csv] != nil
+  file = File.new(options[:csv], "w")
+  file.syswrite(csv_string)
+  puts ""
+end
 
 file = File.new(options[:markdown], "w")
-file.syswrite(markdown.gfm)
-
-file = File.new(options[:csv], "w")
-file.syswrite(csv_string)
+file.syswrite(markdown_string)

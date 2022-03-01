@@ -31,8 +31,6 @@ These fields are not required, but they are treated in a special way, they are u
 
 I may or may not implement these improvements, listed with no priority in mind:
 
-* When exporting to markdown some rows are missing, csv appears to be unaffected by this
-* Haven't tested this, but order of cells in custom columns probably breaks
 * Correct time calculation across days (for example: `From: 23:30 Till: 00:30`) 
 * Merge columns (i.e. custom fields) (useful for typos in commits)
 * Correct time calculation with different time zones
