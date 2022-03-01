@@ -1,6 +1,6 @@
 # PSP Generator
 
-This is a tool to generate PSP (Personal software process) markdown and csv documents.
+This is a tool to generate PSP (Personal software process) markdown and csv documents from git commits.
 
 ## Dependencies
 `ruby` `git` [`git gem`](https://rubygems.org/gems/git) and [`csv2md`](https://rubygems.org/gems/csv2md)
@@ -40,4 +40,5 @@ I may or may not implement these improvements, listed with no priority in mind:
 
 ## Related documentation
 <https://ruby-doc.org/stdlib-2.6.1/libdoc/csv/rdoc/CSV.html>
+
 <https://rubygems.org/gems/csv2md>
