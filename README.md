@@ -36,6 +36,7 @@ I may or may not implement these improvements, listed with no priority in mind:
 * Merge columns (i.e. custom fields) (useful for typos in commits)
 * Correct time calculation with different time zones
 * Collect data from a specific person(s) which made the commits
+* Produce an intermediary CSV file, switch could be edited manually and then do time calculation
 
 ## Related documentation
 <https://ruby-doc.org/stdlib-2.6.1/libdoc/csv/rdoc/CSV.html>

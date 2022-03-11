@@ -14,7 +14,7 @@ options = {
 }
 
 OptionParser.new do |parser|
-  parser.banner = "Usage: example.rb [options]"
+  parser.banner = "Usage: psp.rb [options]"
 
   parser.on("-oPATH", "--open=PATH", "Open local repo in that PATH") do |arg|
     options[:path] = arg
@@ -37,14 +37,18 @@ OptionParser.new do |parser|
   end
 
   parser.on("-dm", "--display-markdown", "Displays markdown output to stdout") do
-    options[:markdown_out] = :stdout
+    puts "AAA"
+    options[:markdown_out] = true
   end
 
   parser.on("-dc", "--display-csv", "Displays cvs output to stdout") do
-    options[:csv_out] = :stdout
+    puts "AAA"
+    options[:csv_out] = true
   end
 
 end.parse!
+
+# p options
 
 begin
   repo = Git.open(options[:path])
@@ -66,10 +70,10 @@ logs[options[:from]..options[:till]].each do |log|
   if log.commit?
     row = Hash.new()
 
-    row["Date"] = log.committer_date.to_s[5..9]
-    row["Till"] = log.committer_date.to_s[11..15]
-    row["Overall"] = "TODO"
-    row["Changes"] = "-#{ log.diff_parent.deletions.to_int.to_s } +#{ log.diff_parent.lines.to_int.to_s } ~#{ log.diff_parent.insertions.to_int.to_s }"
+    row["Date".to_sym] = log.committer_date.to_s[5..9]
+    row["Till".to_sym] = log.committer_date.to_s[11..15]
+    row["Overall".to_sym] = "TODO"
+    row["Changes".to_sym] = "-#{ log.diff_parent.deletions.to_int.to_s } +#{ log.diff_parent.lines.to_int.to_s } ~#{ log.diff_parent.insertions.to_int.to_s }"
 
     # PSP parsing
     commit_msg = log.message.split("--- PSP ---")
@@ -133,11 +137,11 @@ csv_string = csv.to_csv
 markdown_string = Csv2md.new(csv_string).gfm
 
 if options[:csv_out]
-  puts csv_string
+  puts "CSV:\n" + csv_string + "\n"
 end
 
 if options[:markdown_out]
-  puts markdown_string
+  puts "Markdown:\n" + markdown_string + "\n"
 end
 
 if options[:csv] != nil
