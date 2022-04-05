@@ -12,12 +12,15 @@ This tool assumes that commits are made often and each small improvement is in a
 Inside commit messages at the end include this:
 ```
 --- PSP ---
-From: HH:MM or YYYY-MM-DD HH:MM
+From: HH:MM (eventually YYYY-MM-DD HH:MM GMT+X [WIP])
 Interruptions: 3 (Coffee break); MM (Reason)
+Tag: Task1
 Action: Adding tests
 Custom 0: Some text
 Custom 1: Some text
 ```
+
+NOTE: `Tag: ` field is WIP and currently does not work
 
 Custom fields or even other fields are not required in every commit, in that case that cell will be left empty.
 
@@ -34,6 +37,7 @@ I may or may not implement these improvements, listed with no priority in mind:
 
 * Implement `From: @prev_commit`
 * Implement tags
+* Implement generation of time spent summary by action and files
 * Improve how fields are parsed; it's janky
 	IDEA: each fields (or a group of fields) parsing should be moved into separate blocks such that they could be extented by passing blocks into extend() method
 * Overhaul how time is calculated, currently it is also very janky:
@@ -41,7 +45,7 @@ I may or may not implement these improvements, listed with no priority in mind:
 	- Correct time calculation with different time zones
 * Collect data from a specific person(s) which made the commits
 * Produce an intermediary CSV file, switch could be edited manually and then do time calculation
-* Ctrl+F for TODOs arround the code for more
+* Ctrl+F for TODOs arround the codebase for more
 
 ## Related documentation
 <https://ruby-doc.org/stdlib-2.6.1/libdoc/csv/rdoc/CSV.html>
