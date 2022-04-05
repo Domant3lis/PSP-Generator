@@ -32,6 +32,8 @@ These fields are not required, but they are treated in a special way, they are u
 
 I may or may not implement these improvements, listed with no priority in mind:
 
+* Implement `From: @prev_commit`
+* Implement tags
 * Improve how fields are parsed; it's janky
 * Overhaul how time is calculated, currently it is also very janky:
 	- Correct time calculation across days (for example: `From: 23:30 Till: 00:30`) 
