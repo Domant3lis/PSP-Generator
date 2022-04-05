@@ -25,8 +25,8 @@ Custom fields or even other fields are not required in every commit, in that cas
 These fields are not required, but they are treated in a special way, they are used to calculate overall time taken to complete a task.
 * `From: ` - Follows when the work on a commit started
 * `Interruptions` - Subtracts time from interruptions then working on a commit.
-
-`Details: ` - this is the field where the rest of commit message is saved 
+* `Tag: ` - [WIP] This field won't appear in the final table and is planned to be used exclusively for filtering commits
+* `Details: ` - this is the field where the rest of commit message is saved 
 
 ## To improve / fix
 
@@ -35,6 +35,7 @@ I may or may not implement these improvements, listed with no priority in mind:
 * Implement `From: @prev_commit`
 * Implement tags
 * Improve how fields are parsed; it's janky
+	IDEA: each fields (or a group of fields) parsing should be moved into separate blocks such that they could be extented by passing blocks into extend() method
 * Overhaul how time is calculated, currently it is also very janky:
 	- Correct time calculation across days (for example: `From: 23:30 Till: 00:30`) 
 	- Correct time calculation with different time zones
