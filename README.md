@@ -1,6 +1,6 @@
 # PSP Generator
 
-This is a tool to generate PSP (Personal software process) markdown and csv documents from git commits.
+This is a tool to generate PSP (Personal software process) markdown and CSV documents from git commits.
 
 ## Dependencies
 `ruby`, `git`, `libgit`
@@ -35,19 +35,24 @@ These fields are not required, but they are treated in a special way, they are u
 
 I may or may not implement these improvements, listed with no priority in mind:
 
+* Implement `Till` field, overrides the one from the commit message
 * Implement `From: @prev_commit`
 * Implement tags
 * Implement generation of time spent summary by action and files
 * Improve how fields are parsed; it's janky
-	IDEA: each fields (or a group of fields) parsing should be moved into separate blocks such that they could be extented by passing blocks into extend() method
+	IDEA: each fields (or a group of fields) parsing should be moved into separate blocks such that they could be extended by passing blocks into extend() method
 * Overhaul how time is calculated, currently it is also very janky:
 	- Correct time calculation across days (for example: `From: 23:30 Till: 00:30`) 
 	- Correct time calculation with different time zones
 * Collect data from a specific person(s) which made the commits
-* Produce an intermediary CSV file, switch could be edited manually and then do time calculation
-* Ctrl+F for TODOs arround the codebase for more
+* Do time calculation from intermediary CSV files
+* Integrate issue tracking
+* Improve syntax
 
 ## Related documentation
 <https://ruby-doc.org/stdlib-2.6.1/libdoc/csv/rdoc/CSV.html>
 
 <https://rubygems.org/gems/csv2md>
+
+## Disclaimer
+This is a personal project thus no warranty or quality assurance is provided, but feel free to send as many PRs as you wish.
