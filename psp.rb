@@ -27,6 +27,7 @@ class PSP
 		logs.each do |log|
 			commit_info = {}
 
+			commit_info[:itself] = log
 			commit_info['Date'] = log.committer_date
 			commit_info['Changes'] = log.diff_parent
 
@@ -49,8 +50,6 @@ class PSP
 		@data.select! { |c| filter.call(c) }
 	end
 
-	def filter_parsed(&_filter); end
-
 	def build_header(preset, exclude: [])
 		@data.each do |row|
 			exclude.each { |e| row.delete(e) }
@@ -69,10 +68,10 @@ class PSP
 			config.col_sep = col_sep
 		end
 
-		csv_shapper = CsvShaper::Shaper.new
+		csv_shaper = CsvShaper::Shaper.new
 
 		# Builds a header
-		csv_shapper.headers header do |csv, _head|
+		csv_shaper.headers header do |csv, _head|
 			header.each do |head|
 				csv.columns head
 			end
@@ -82,14 +81,13 @@ class PSP
 		@data.each do |data_row|
 			exclude.each { |e| data_row.delete(e) }
 
-			csv_shapper.row do |csv|
+			csv_shaper.row do |csv|
 				data_row.each do |data_cell|
 					csv.cell data_cell[0], data_cell[1]
 				end
 			end
 		end
 
-		# p csv_shapper
-		csv_shapper.to_csv
+		csv_shaper.to_csv
 	end
 end

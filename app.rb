@@ -63,18 +63,13 @@ OptionParser.new do |parser|
 	# end
 end.parse!
 
-puts(@options[:repopath])
-
 psp = PSP.new(@options[:repopath])
-
-puts(@options[:tags])
 
 psp.read_commits do |log|
 	commit_info = {}
 
 	commit_msg = log.message.split(/-+ *PSP *-+/)
 	commit_info['Details'] = commit_msg[0].split(/\n/).join(' ').split(/\t/).join(' ')
-	commit_info[:itself] = log
 
 	if commit_msg[1]
 
@@ -201,7 +196,6 @@ default_preset = Set[
 ]
 
 csv_string = psp.to_csv(exclude: ['Tag'], preset: default_preset, col_sep: "\t")
-# csv_string = psp.to_csv(col_sep: "\t")
 
 if @options[:csv_stdout]
 	puts(csv_string)
@@ -211,66 +205,3 @@ if @options[:csv_fileout]
 	file = File.new(@options[:csv_fileout], 'w')
 	file.syswrite(csv_string)
 end
-
-	# def parse_data
-	# 	@data.map! do |row|
-
-	# 		if row['From']
-	# 			begin
-	# 				# puts(row['From'])
-	# 				date_from = DateTime.strptime(row['From'], ' %H:%M')
-
-	# 				# TODO: Remove this, it is kept to support some old commit messages in mine projects
-	# 				if row['Interferences']
-	# 					row['Interruptions'] = row['Interferences']
-	# 				end
-					
-	# 				commit_time = row['Date']
-	# 				date_from = Time.new(commit_time.year, commit_time.mon, commit_time.day, date_from.hour, date_from.min, 0)
-
-	# 				# if row['Till']
-	# 				#   puts
-	# 				#   time =
-	# 				# else
-	# 				# end
-
-	# 				# Parses interruptions
-	# 				if row['Interruptions'] && date_from
-	# 					date_int = []
-
-	# 					# TODO: Remove this, it is kept to support some old commit messages in mine project
-	# 					interruptions = row['Interruptions'].split(';')
-	# 					unless interruptions[1]
-	# 						interruptions = row['Interruptions'].split(',')
-	# 					end
-
-	# 					interruptions.each do |int|
-	# 						int_ = int.split('(')
-	# 						begin
-	# 							# Parses "%M"
-	# 							date_int.push(Integer(int_[0]) * 60)
-	# 						rescue StandardError
-	# 							begin
-	# 								# Parses "%H:%M"
-	# 								date_int.push(Integer(int_.split(':')[0] * 60 * 60, 60 * Integer(int_.split(':')[1])))
-	# 							rescue StandardError
-	# 								puts "Failed to parse an interruption from commit '#{row[:itself].sha}' `#{int}`"
-	# 								next
-	# 							end
-	# 						end
-	# 					end
-
-	# 					date_int.each do |int|
-	# 						time -= int.to_i
-	# 					end
-	# 				end
-
-	# 				# Convertion into minutes
-	# 				row['Overall'] = time / 60
-	# 			rescue StandardError
-	# 				puts "Failed to parse an `From` field from commit '#{row[:itself].sha}' From: `#{row['From']}`"
-	# 			end
-	# 		end
-	# 		row
-	# 	end
-	# end
