@@ -58,5 +58,5 @@ build-iPhoneSimulator/
 # Other
 *.csv
 *.md
-psp.*
+!README.md
 .vscode
