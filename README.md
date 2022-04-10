@@ -12,7 +12,8 @@ This tool assumes that commits are made often and each small improvement is in a
 Inside commit messages at the end include this:
 ```
 --- PSP ---
-From: HH:MM (eventually YYYY-MM-DD HH:MM GMT+X [WIP])
+From: TIME
+Till: TIME
 Interruptions: 3 (Coffee break); MM (Reason)
 Tag: Task1
 Action: Adding tests
@@ -20,12 +21,20 @@ Custom 0: Some text
 Custom 1: Some text
 ```
 
+TIME field can be formatted as: `HH:MM` or `YYYY-MM-DD HH:MM` or `YYYY-MM-DD HH:MM ±TIMEZONE` or `YYYY-MM-DD HH:MM ±TIMEZONE_HOUR:TIMEZONE_MINUTE` or `YYYY-MM-DD HH:MM ±TIMEZONE_HOUR:TIMEZONE_MINUTE:TIMEZONE:SECOND`
+
+### Running
+Then run form the command line `./app.rb -r REPOPATH -c OUTPUT_PATH`, for additional options run `./app.rb --help`. Don't forget to chmod `app.rb`
+
 Custom fields or even preset fields are not required in every commit, in that case that cell will be left empty in the final document.
+
+I haven't tested this on Windows, but it should work with little to no modifications
 
 ### Special fields
 These fields are not required, but they are treated in a special way, they are used to calculate overall time taken to complete a task.
 * `From: ` - Follows when the work on a commit started
-* `Interruptions` - Subtracts time from interruptions then working on a commit.
+* `Till: ` - Follows when the work on a commit ended, usually is not needed as commit timestamp is used, this option overrides the commit timestamp
+* `Interruptions: ` - Subtracts time from interruptions then working on a commit.
 * `Tag: ` - This field won't appear in the final table and is planned to be used exclusively for filtering commits
 * `Details: ` - this is the field where the rest of commit message is saved 
 
@@ -33,15 +42,12 @@ These fields are not required, but they are treated in a special way, they are u
 
 I may or may not implement these improvements, listed with no priority in mind:
 
-* Implement `From: @prev_commit`
 * Implement generation of time spent summary by action and files
-* Overhaul how time is calculated, currently it is very janky:
-	- Correct time calculation across days (for example: `From: 23:30 Till: 00:30`) 
-	- Correct time calculation with different time zones
+* Correct time calculation across days (for example: `From: 23:30 Till: 00:30`) 
 * Filter data based on which person(s) made the commits
 * Do time calculation from intermediary CSV files
 * Integrate issue tracking
-* Implement `filter_parsed` method
+* Add tests (Currently I use [this repo](https://github.com/Domant3lis/ADS/) and visually check with this command `clear && ./app.rb -r '~/Projects/ADS' --tags 'Task2' -c 'psp.csv' --display-csv --exclude-commits 'fd81e30a2fb136; a45d6fb8cf9f0' --include-commits 'e437c1de1ec6a0; d5f9195df212d9'`)
 
 ## Architecture and extensibility
 This tool is build to be as extensible as possible, in fact main functionality of this utility is implemented **outside** the main class.

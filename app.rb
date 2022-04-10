@@ -16,17 +16,17 @@ require 'time'
 	csv_stdout: nil,
 	csv_filein: nil,
 	tags: nil,
-	syntax: 'psp',
+	syntax: 'psp'
 }
 
 OptionParser.new do |parser|
 	parser.banner = 'Usage: psp.rb [options]'
 
-	parser.on('-rPATH', '--repo=PATH', 'Open local repo in that PATH') do |arg|
+	parser.on('-rPATH', '--repo PATH', 'Open local repo in PATH') do |arg|
 		@options[:repopath] = arg
 	end
 
-	parser.on('-cFILEPATH', '--csv=FILEPATH', 'Specify where to export the csv file') do |arg|
+	parser.on('-cFILEPATH', '--csv FILEPATH', 'Specify where to export the csv file') do |arg|
 		@options[:csv_fileout] = arg
 	end
 
@@ -34,12 +34,20 @@ OptionParser.new do |parser|
 		@options[:csv_stdout] = true
 	end
 
-	parser.on('--syntax=SYNTAX', 'Choose in which mode to parse your commits, supported: psp, WIP: lff') do |arg|
-		@options[:syntax] = arg
+	# parser.on('--syntax=SYNTAX', 'Choose in which mode to parse your commits, supported: psp, WIP: lff') do |arg|
+	# 	@options[:syntax] = arg
+	# end
+
+	parser.on('--tags TAGS', 'Specify which commits with tags to include') do |arg|
+		@options[:tags] = arg.split(/; */)
 	end
 
-	parser.on('--tags=TAGS', 'Specify which commits with tags to include') do |arg|
-		@options[:tags] = arg.split('; ')
+	parser.on('--exclude-commits COMMITS', 'Specify which commits to exclude, follows this syntax: --exclude-commits \'1234567890; 1234567890\'') do |arg|
+		@options[:exclude_commits] = arg.split(/; */)
+	end
+
+	parser.on('--include-commits COMMITS', 'Specify which commits to include, follows this syntax: --include-commits \'1234567890; 1234567890\'') do |arg|
+		@options[:include_commits] = arg.split(/; */)
 	end
 
 	# parser.on('--since-commit=SINCE', Integer, 'Specify from which commit to generate, default is 0 (i.e. newest)') do |arg|
@@ -66,10 +74,10 @@ end.parse!
 psp = PSP.new(@options[:repopath])
 
 psp.read_commits do |log|
-	commit_info = {}
+	commit = {}
 
 	commit_msg = log.message.split(/-+ *PSP *-+/)
-	commit_info['Details'] = commit_msg[0].split(/\n/).join(' ').split(/\t/).join(' ')
+	commit['Details'] = commit_msg[0].split(/\n/).join(' ').split(/\t/).join(' ')
 
 	if commit_msg[1]
 
@@ -81,77 +89,102 @@ psp.read_commits do |log|
 			key = temp[0]
 			value = temp[1..].join(':')
 
-			commit_info[key] = value
+			commit[key] = value
 		end
-	end
-
-	commit_info
-end
-
-if @options[:tags]
-	psp.filter_commits do |commit|
-		includes = false
-
-		@options[:tags].any? do |t|
-			if commit['Tag']
-				includes = commit['Tag'].include? t
-			end
-		end
-
-		# Todo exclude / include commiters
-		# includes = commit[:itself].commiters.any? @options[:commiters]
-
-		# Todo exclude / include commits
-
-		includes
-	end
-end
-
-psp.on('Changes') do |commit_info|
-	commit_info['Changes'] = "-#{commit_info['Changes'].deletions.to_int} +#{commit_info['Changes'].lines.to_int} ~#{commit_info['Changes'].insertions.to_int}"
-	commit_info
-end
-
-psp.on('Till') do |commit|
-	begin
-		date_till = Time.strptime(commit['Till'], ' %H:%M')
-
-		date_till = Time.new(commit['Date'].year, commit['Date'].mon, commit['Date'].day, date_till.hour, date_till.min)
-
-		commit['Date'] = date_till
-	rescue StandardError
-		puts("Failed to parse field 'Till' in commit #{commit_info['itself']}: #{commit_info['Till']}")
 	end
 
 	commit
 end
 
-psp.on('From') do |commit_info|
-	begin
-		date_from = Time.strptime(commit_info['From'], ' %H:%M')
+if @options[:exclude_commits]
+	psp.filter_commits do |commit|
+		@options[:exclude_commits].none? { |ec| commit[:itself].sha[...ec.size] == ec }
+	end
+end
 
-		date_from = Time.new(commit_info['Date'].year, commit_info['Date'].mon, commit_info['Date'].day, date_from.hour, date_from.min)
-
-		commit_info['From'] = date_from
-
-		commit_info['Overall'] = (commit_info['Date'].to_i - commit_info['From'].to_i) / 60
-	rescue StandardError
-		puts("Failed to parse field 'From' in commit #{commit_info['itself']}: #{commit_info['From']}")
+psp.filter_commits do |commit|
+	includes = true
+	if @options[:tags]
+		includes = false
+		includes ||= @options[:tags].any? { |t| commit['Tag']&.include? t }
 	end
 
-	commit_info
+	if @options[:include_commits] && !includes
+		includes ||= @options[:include_commits].any? do |ic|
+			commit[:itself].sha[...ic.size] == ic
+		end
+	end
+
+	# Todo exclude / include commiters
+	# includes = commit[:itself].commiters.any? @options[:commiters]
+	
+	includes
+end
+
+psp.on('Changes') do |commit|
+	commit['Changes'] = "`-#{commit['Changes'].deletions.to_int} +#{commit['Changes'].lines.to_int} ~#{commit['Changes'].insertions.to_int}`"
+	commit
+end
+
+def date_parse(commit, key)
+	case commit[key]
+	when / *@prev_commit/
+		temp = commit[:itself].parent.committer_date
+
+		# Parses full date and time with timezone
+	when / *[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+ [+-][0-9]:[0-9]+:[0-9]+/
+		temp = Time.strptime(commit[key], '%Y-%m-%d %H:%M %::z')
+
+	when / *[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+ [+-][0-9]+:[0-9]+/
+		temp = Time.strptime(commit[key], '%Y-%m-%d %H:%M %:z')
+
+	when / *[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+ [+-][0-9]+/
+		temp = Time.strptime(commit[key], '%Y-%m-%d %H:%M %z')
+
+	# Parses full date and time
+	when / *[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+/
+		temp = Time.strptime(commit[key], '%Y-%m-%d %H:%M')
+
+		temp = Time.new(temp.year, temp.mon, temp.day, temp.hour, temp.min, commit['Date'].zone)
+	# Parses only hours and minutes
+	when / *[0-9]+:[0-9]+/
+		temp = Time.strptime(commit[key], ' %H:%M')
+
+		temp = Time.new(commit['Date'].year, commit['Date'].mon, commit['Date'].day, temp.hour, temp.min, commit['Date'].zone)
+	else
+		temp = commit[key]
+		puts("WARN: Failed to parse field 'From' in commit #{commit['itself']}: #{commit[key]}")
+	end
+
+	commit[key] = temp
+	commit
+end
+
+psp.on('Till') do |commit|
+	begin
+		commit = date_parse(commit, 'Till')
+	rescue StandardError
+		puts("Failed to parse field 'Till' in commit #{commit['itself']}: #{commit['Till']}")
+	end
+
+	commit
+end
+
+psp.on('From') do |commit|
+	begin
+		commit = date_parse(commit, 'From')
+		commit['Overall'] = (commit['Date'].to_i - commit['From'].to_i) / 60
+	rescue StandardError
+		puts("EXP: Failed to parse field 'From' in commit #{commit['itself']}: #{commit['From']}")
+	end
+
+	commit
 end
 
 psp.on('From', 'Interruptions') do |commit|
 	begin
 		time = commit['Date'].to_i
 		time -= commit['From'].to_i
-
-		# TODO: Remove this, it is kept to support some old commit messages in my project
-		# interruptions = row['Interruptions'].split(';')
-		# unless interruptions[1]
-		# 	interruptions = row['Interruptions'].split(',')
-		# end
 
 		interruptions = commit['Interruptions'].split(';')
 
@@ -181,6 +214,22 @@ psp.on('From', 'Interruptions') do |commit|
 	rescue StandardError
 		puts("Failed to parse fields 'From' and 'Interruptions' in commit #{commit['itself']}: #{commit['From']}, #{commit['Interruptions']}")
 	end
+	commit
+end
+
+# Some string formatting
+psp.on('Date') do |commit|
+	commit['Till'] = commit['Date'].to_s[11..15]
+	commit
+end
+
+psp.on('Date') do |commit|
+	commit['Date'] = commit['Date'].to_s[5..10]
+	commit
+end
+
+psp.on('From') do |commit|
+	commit['From'] = commit['From'].to_s[11..15]
 	commit
 end
 

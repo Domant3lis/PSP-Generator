@@ -1,5 +1,3 @@
-#!/usr/bin/env ruby
-
 require 'set'
 require 'git'
 
@@ -15,7 +13,7 @@ class PSP
 	def open_local_repo(repopath)
 		@repo = Git.open(repopath)
 	rescue StandardError
-		puts 'Failed to open repo, specified path may be incorect'
+		puts 'Failed to open repo, specified path may be incorrect'
 		exit
 	end
 
