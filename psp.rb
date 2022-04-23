@@ -44,6 +44,24 @@ class PSP
 		end
 	end
 
+	def on_cell(key, &block)
+		@data.map! do |commit|
+			if commit[key]
+				commit[key] = block.call(commit[key])
+			end
+
+			commit
+		end
+	end
+
+	def on_all_cells(&block)
+		@data.map! do |commit|
+			commit.each do |key, cell|
+				commit[key] = block.call(cell)
+			end
+		end
+	end
+
 	def filter_commits(&filter)
 		@data.select! { |c| filter.call(c) }
 	end
