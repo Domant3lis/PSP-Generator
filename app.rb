@@ -1,8 +1,9 @@
 #!/usr/bin/env ruby
 
+require './psp'
+require './parse.rb'
 require 'optparse'
 require 'csv2md'
-require './psp'
 require 'csv_shaper'
 require 'time'
 
@@ -34,10 +35,6 @@ OptionParser.new do |parser|
 		@options[:csv_stdout] = true
 	end
 
-	# parser.on('--syntax=SYNTAX', 'Choose in which mode to parse your commits, supported: psp, WIP: lff') do |arg|
-	# 	@options[:syntax] = arg
-	# end
-
 	parser.on('--tags TAGS', 'Specify which commits with tags to include') do |arg|
 		@options[:tags] = arg.split(/; */)
 	end
@@ -48,6 +45,10 @@ OptionParser.new do |parser|
 
 	parser.on('--include-commits COMMITS', 'Specify which commits to include, follows this syntax: --include-commits \'1234567890; 1234567890\'') do |arg|
 		@options[:include_commits] = arg.split(/; */)
+	end
+
+	parser.on('--syntax SYNTAX', 'Specify which syntax (psp or lff) (psp by default) to use to parse commits') do |arg|
+		@options[:syntax] = arg.downcase
 	end
 
 	# parser.on('--since-commit=SINCE', Integer, 'Specify from which commit to generate, default is 0 (i.e. newest)') do |arg|
@@ -71,38 +72,29 @@ OptionParser.new do |parser|
 	# end
 end.parse!
 
-psp = PSP.new(@options[:repopath])
+repo = PSP.new(@options[:repopath])
 
-psp.read_commits do |log|
-	commit = {}
-
-	commit_msg = log.message.split(/-+ *PSP *-+/)
-	commit['Details'] = commit_msg[0].split(/\n/).join(' ').split(/\t/).join(' ')
-
-	if commit_msg[1]
-
-		fields = commit_msg[1].split("\n")
-
-		fields[1..].each do |field|
-			temp = field.split(':')
-
-			key = temp[0]
-			value = temp[1..].join(':')
-
-			commit[key] = value
-		end
-	end
-
-	commit
+case @options[:syntax]
+when 'psp'
+	repo = psp(repo)
+	time_sep = ' '
+when 'lff'
+	time_sep = ';'
+	repo = lff(repo)
+else
+	puts "#{options[:syntax]} not supported"
+	exit
 end
 
+# puts repo.data
+
 if @options[:exclude_commits]
-	psp.filter_commits do |commit|
+	repo.filter_commits do |commit|
 		@options[:exclude_commits].none? { |ec| commit[:itself].sha[...ec.size] == ec }
 	end
 end
 
-psp.filter_commits do |commit|
+repo.filter_commits do |commit|
 	includes = true
 	if @options[:tags]
 		includes = false
@@ -115,54 +107,20 @@ psp.filter_commits do |commit|
 		end
 	end
 
+	if @options[:syntax] == 'lff'
+		reg = /lff: /mi
+		includes &=	reg.match(commit[:itself].message)
+	end
+
 	# Todo exclude / include commiters
 	# includes = commit[:itself].commiters.any? @options[:commiters]
-	
+
 	includes
 end
 
-psp.on('Changes') do |commit|
-	commit['Changes'] = "`-#{commit['Changes'].deletions.to_int} +#{commit['Changes'].lines.to_int} ~#{commit['Changes'].insertions.to_int}`"
-	commit
-end
-
-def date_parse(commit, key)
-	case commit[key]
-	when / *@prev_commit/
-		temp = commit[:itself].parent.committer_date
-
-		# Parses full date and time with timezone
-	when / *[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+ [+-][0-9]:[0-9]+:[0-9]+/
-		temp = Time.strptime(commit[key], '%Y-%m-%d %H:%M %::z')
-
-	when / *[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+ [+-][0-9]+:[0-9]+/
-		temp = Time.strptime(commit[key], '%Y-%m-%d %H:%M %:z')
-
-	when / *[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+ [+-][0-9]+/
-		temp = Time.strptime(commit[key], '%Y-%m-%d %H:%M %z')
-
-	# Parses full date and time
-	when / *[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+/
-		temp = Time.strptime(commit[key], '%Y-%m-%d %H:%M')
-
-		temp = Time.new(temp.year, temp.mon, temp.day, temp.hour, temp.min, commit['Date'].zone)
-	# Parses only hours and minutes
-	when / *[0-9]+:[0-9]+/
-		temp = Time.strptime(commit[key], ' %H:%M')
-
-		temp = Time.new(commit['Date'].year, commit['Date'].mon, commit['Date'].day, temp.hour, temp.min, commit['Date'].zone)
-	else
-		temp = commit[key]
-		puts("WARN: Failed to parse field 'From' in commit #{commit['itself']}: #{commit[key]}")
-	end
-
-	commit[key] = temp
-	commit
-end
-
-psp.on('Till') do |commit|
+repo.on('Till') do |commit|
 	begin
-		commit = date_parse(commit, 'Till')
+		commit = date_parse(commit, 'Till', sep: time_sep)
 	rescue StandardError
 		puts("Failed to parse field 'Till' in commit #{commit['itself']}: #{commit['Till']}")
 	end
@@ -170,9 +128,9 @@ psp.on('Till') do |commit|
 	commit
 end
 
-psp.on('From') do |commit|
+repo.on('From') do |commit|
 	begin
-		commit = date_parse(commit, 'From')
+		commit = date_parse(commit, 'From', sep: time_sep)
 		commit['Overall'] = (commit['Date'].to_i - commit['From'].to_i) / 60
 	rescue StandardError
 		puts("EXP: Failed to parse field 'From' in commit #{commit['itself']}: #{commit['From']}")
@@ -181,7 +139,7 @@ psp.on('From') do |commit|
 	commit
 end
 
-psp.on('From', 'Interruptions') do |commit|
+repo.on('From', 'Interruptions') do |commit|
 	begin
 		time = commit['Date'].to_i
 		time -= commit['From'].to_i
@@ -218,20 +176,45 @@ psp.on('From', 'Interruptions') do |commit|
 end
 
 # Some string formatting
-psp.on('Date') do |commit|
+repo.on('Date') do |commit|
 	commit['Till'] = commit['Date'].to_s[11..15]
 	commit
 end
 
-psp.on('Date') do |commit|
-	commit['Date'] = commit['Date'].to_s[5..10]
+repo.on_cell('Changes') do |cell|
+	cell = "`-#{cell.deletions.to_int} +#{cell.lines.to_int} ~#{cell.insertions.to_int}`"
+	cell
+end
+
+repo.on_cell('Date') do |cell|
+	cell = cell.to_s[5..10]
+	cell
+end
+
+repo.on_cell('From') do |cell|
+	if cell.instance_of?(Time)
+		cell = cell.to_s[11..15]
+	end
+	cell
+end
+
+repo.on_all_cells do |cell|
+	if cell.instance_of?(String)
+		cell = cell.split(/\n/).join(' ')
+			.split(/\t/).join(' ')
+	end
+
+	cell
+end
+
+data = repo.data
+
+data.map! do |commit|
+	commit.delete(:itself)
 	commit
 end
 
-psp.on('From') do |commit|
-	commit['From'] = commit['From'].to_s[11..15]
-	commit
-end
+# puts data
 
 default_preset = Set[
 	'Date',
@@ -244,7 +227,7 @@ default_preset = Set[
 	'Changes',
 ]
 
-csv_string = psp.to_csv(exclude: ['Tag'], preset: default_preset, col_sep: "\t")
+csv_string = repo.to_csv(exclude: ['Tag'], preset: default_preset, col_sep: "\t")
 
 if @options[:csv_stdout]
 	puts(csv_string)
