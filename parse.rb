@@ -77,13 +77,13 @@ def lff(repo)
 			commit[key] = value
 		end
 
-		# Removes all fields from the commit message
-		temp = log.message.split("\n")[1..]
+		temp = log.message.split("\n")
 
 		# The else part is wanted only if checking for 'LFF: ' part
 		# of the commit message is turned off
-		if temp.size > 0
-			commit['Details'] = temp.join(' ').gsub(/<.*>/, '')
+		if temp.size > 1
+			commit['Action'] = temp[0].sub(/lff: /mi, '')
+			commit['Details'] = temp[1..].join(' ').gsub(/<.*>/, '')
 		else
 			commit['Details'] = log.message
 		end
