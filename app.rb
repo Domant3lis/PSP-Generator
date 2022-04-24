@@ -12,8 +12,8 @@ require 'time'
 	# since_commit: nil,
 	# till_commit: nil,
 	# markdown_fileout: nil,
-	csv_fileout: nil,
 	# markdown_stdout: nil,
+	csv_fileout: nil,
 	csv_stdout: nil,
 	csv_filein: nil,
 	tags: nil,
@@ -122,7 +122,7 @@ repo.on('Till') do |commit|
 	begin
 		commit = date_parse(commit, 'Till', sep: time_sep)
 	rescue StandardError
-		puts("Failed to parse field 'Till' in commit #{commit['itself']}: #{commit['Till']}")
+		puts("EXP: Failed to parse field 'Till' in commit #{commit['itself']}: #{commit['Till']}")
 	end
 
 	commit
@@ -149,18 +149,17 @@ repo.on('From', 'Interruptions') do |commit|
 		ints = []
 
 		interruptions.each do |int|
-			int_ = int.split('(')
-			begin
-				# Parses "%M"
-				ints.push(Integer(int_[0]) * 60)
-			rescue StandardError
-				begin
-					# Parses "%H:%M"
-					ints.push(Integer(int_.split(':')[0] * 60 * 60, 60 * Integer(int_.split(':')[1])))
-				rescue StandardError
-					puts "Failed to parse an interruption from commit '#{row[:itself].sha}' `#{int}`"
-					next
-				end
+			temp = int.split('(')[0].strip
+
+			case temp
+			when /[0-9]+:[0-9]+/
+				temp = Time.strptime("1970-01-01 #{temp} +0000", "%Y-%m-%d %k:%M %z")
+				ints.push(temp)
+			when /[0-9]+/
+				temp = Time.strptime("1970-01-01 0:#{temp} +0000", "%Y-%m-%d %k:%M %z")
+				ints.push(temp)
+			else
+				puts "Failed to parse an interruption from commit '#{commit[:itself].sha}' `#{int}`"
 			end
 		end
 
@@ -170,7 +169,7 @@ repo.on('From', 'Interruptions') do |commit|
 
 		commit['Overall'] = time / 60
 	rescue StandardError
-		puts("Failed to parse fields 'From' and 'Interruptions' in commit #{commit['itself']}: #{commit['From']}, #{commit['Interruptions']}")
+		puts("EXP: Failed to parse fields 'From' and 'Interruptions' in commit #{commit['itself']}: #{commit['From']}, #{commit['Interruptions']}")
 	end
 	commit
 end

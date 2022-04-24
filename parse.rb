@@ -1,5 +1,5 @@
 def date_parse(commit, key, sep = ' ')
-	time_str = commit[key].lstrip()
+	time_str = commit[key].lstrip
 
 	case commit[key]
 	when / *@prev_commit/
@@ -22,9 +22,13 @@ def date_parse(commit, key, sep = ' ')
 		temp = Time.new(temp.year, temp.mon, temp.day, temp.hour, temp.min, commit['Date'].zone)
 	# Parses only hours and minutes
 	when / *[0-9]+:[0-9]+/
-		temp = Time.strptime(time_str, '%H:%M')
 
+		temp = Time.strptime(time_str, '%H:%M')
 		temp = Time.new(commit['Date'].year, commit['Date'].mon, commit['Date'].day, temp.hour, temp.min, commit['Date'].zone)
+
+		if temp > commit['Date']
+			temp -= 60 * 60 * 24 # One day
+		end
 	else
 		temp = commit[key]
 		puts("WARN: Failed to parse field 'From' in commit #{commit['itself']}: #{commit[key]}")
