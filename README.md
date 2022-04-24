@@ -30,7 +30,7 @@ Then run form the command line `./app.rb -r REPOPATH -c OUTPUT_PATH`, for additi
 
 Custom fields or even preset fields are not required in every commit, in that case that cell will be left empty in the final document.
 
-I haven't tested this on Windows, but it should work with little to no modifications
+I haven't tested this on Windows, but it should work with little to no modifications (provided all dependencies are there)
 
 ### Special fields
 These fields are not required, but they are treated in a special way, they are used to calculate overall time taken to complete a task.
@@ -45,7 +45,6 @@ These fields are not required, but they are treated in a special way, they are u
 I may or may not implement these improvements, listed with no priority in mind:
 
 * Implement generation of time spent summary by action and files
-* Correct time calculation across days (for example: `From: 23:30 Till: 00:30`) 
 * Filter data based on which person(s) made the commits
 * Do time calculation from intermediary CSV files
 * Integrate issue tracking
