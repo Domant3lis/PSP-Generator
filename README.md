@@ -25,12 +25,16 @@ TIME field can be formatted as: `HH:MM` or `YYYY-MM-DD HH:MM` or `YYYY-MM-DD HH:
 
 This tool also supports [this syntax](https://bx2.tech/vu-lff/).
 
-### Running
-Then run form the command line `./app.rb -r REPOPATH -c OUTPUT_PATH`, for additional options run `./app.rb --help`. Don't forget to chmod `app.rb`
-
 Custom fields or even preset fields are not required in every commit, in that case that cell will be left empty in the final document.
 
-I haven't tested this on Windows, but it should work with little to no modifications (provided all dependencies are there)
+### Running
+1. Make `app.rb` executable: `chmod u+x`
+
+2. Install required dependancies by running `bundle install`
+
+3. Then run form the command line `./app.rb -r REPOPATH -c OUTPUT_PATH`, for additional options run `./app.rb --help`.
+
+I haven't tested this on Windows, but it should work with little to no modifications.
 
 ### Special fields
 These fields are not required, but they are treated in a special way, they are used to calculate overall time taken to complete a task.
@@ -38,13 +42,15 @@ These fields are not required, but they are treated in a special way, they are u
 * `Till: ` - Follows when the work on a commit ended, usually is not needed as commit timestamp is used, this option overrides the commit timestamp
 * `Interruptions: ` - Subtracts time from interruptions then working on a commit.
 * `Tag: ` - This field won't appear in the final table and is planned to be used exclusively for filtering commits
-* `Details: ` - this is the field where the rest of commit message is saved 
+* `Details: ` - this is the field where the rest of commit message is saved
 
 ## To improve / fix
 
 I may or may not implement these improvements, listed with no priority in mind:
 
 * Implement generation of time spent summary by action and files
+* Add --PSP-Overhead option: add a specified amount of time between each commit of action PSP
+* Implement @prev_commit on all fields
 * Filter data based on which person(s) made the commits
 * Do time calculation from intermediary CSV files
 * Integrate issue tracking
