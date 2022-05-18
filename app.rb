@@ -86,8 +86,7 @@ else
 	exit
 end
 
-# puts repo.data
-
+# Excludes commits based on --exclude-commits opt
 if @options[:exclude_commits]
 	repo.filter_commits do |commit|
 		@options[:exclude_commits].none? { |ec| commit[:itself].sha[...ec.size] == ec }
@@ -112,7 +111,7 @@ repo.filter_commits do |commit|
 		includes &=	reg.match(commit[:itself].message)
 	end
 
-	# Todo exclude / include commiters
+	# TODO: exclude / include commiters
 	# includes = commit[:itself].commiters.any? @options[:commiters]
 
 	includes
@@ -121,8 +120,9 @@ end
 repo.on('Till') do |commit|
 	begin
 		commit = date_parse(commit, 'Till', sep: time_sep)
+		commit['Date'] = commit['Till']
 	rescue StandardError
-		puts("EXP: Failed to parse field 'Till' in commit #{commit['itself']}: #{commit['Till']}")
+		puts("EXP: Failed to parse field 'Till' in commit #{commit['itself']}: '#{commit['Till']}'")
 	end
 
 	commit
@@ -133,7 +133,7 @@ repo.on('From') do |commit|
 		commit = date_parse(commit, 'From', sep: time_sep)
 		commit['Overall'] = (commit['Date'].to_i - commit['From'].to_i) / 60
 	rescue StandardError
-		puts("EXP: Failed to parse field 'From' in commit #{commit['itself']}: #{commit['From']}")
+		puts("EXP: Failed to parse field 'From' in commit #{commit['itself']}: '#{commit['From']}'")
 	end
 
 	commit
@@ -212,8 +212,6 @@ data.map! do |commit|
 	commit.delete(:itself)
 	commit
 end
-
-# puts data
 
 default_preset = Set[
 	'Date',

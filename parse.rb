@@ -1,7 +1,10 @@
-def date_parse(commit, key, sep = ' ')
+require 'time'
+require 'tz_offset'
+
+def date_parse(commit, key, sep= ' ')
 	time_str = commit[key].lstrip
 
-	case commit[key]
+	case time_str
 	when / *@prev_commit/
 		temp = commit[:itself].parent.committer_date
 
@@ -19,12 +22,12 @@ def date_parse(commit, key, sep = ' ')
 	when / *[0-9]+-[0-9]+-[0-9]+#{sep}[0-9]+:[0-9]+/
 		temp = Time.strptime(time_str, "%Y-%m-%d#{sep}%H:%M")
 
-		temp = Time.new(temp.year, temp.mon, temp.day, temp.hour, temp.min, commit['Date'].zone)
+		temp = TZOffset.parse(commit['Date'].zone).local(temp.year, temp.mon, temp.day, temp.hour, temp.min, temp.sec).localtime
 	# Parses only hours and minutes
 	when / *[0-9]+:[0-9]+/
-
 		temp = Time.strptime(time_str, '%H:%M')
-		temp = Time.new(commit['Date'].year, commit['Date'].mon, commit['Date'].day, temp.hour, temp.min, commit['Date'].zone)
+
+		temp = TZOffset.parse(commit['Date'].zone).local(commit['Date'].year, commit['Date'].mon, commit['Date'].day, temp.hour, temp.min, commit['Date'].sec).localtime
 
 		if temp > commit['Date']
 			temp -= 60 * 60 * 24 # One day
@@ -47,9 +50,10 @@ def psp(repo)
 
 		if commit_msg[1]
 
-			fields = commit_msg[1].split("\n")
+			fields = commit_msg[1].split(/ *\n */)
 
 			fields[1..].each do |field|
+				next if field == nil || field.size == 0
 				temp = field.split(':')
 
 				key = temp[0].capitalize
