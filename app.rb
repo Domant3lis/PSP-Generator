@@ -97,7 +97,11 @@ repo.filter_commits do |commit|
 	includes = true
 	if @options[:tags]
 		includes = false
-		includes ||= @options[:tags].any? { |t| commit['Tag']&.include? t }
+		includes ||= @options[:tags].any? do |t|
+			if commit['Tag']
+				commit['Tag'].lstrip.include? t.lstrip
+			end
+		end
 	end
 
 	if @options[:include_commits] && !includes
