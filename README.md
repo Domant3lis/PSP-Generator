@@ -56,16 +56,15 @@ I may or may not implement these improvements, listed with no priority in mind:
 * Integrate issue tracking
 * Add tests (Currently I use [this repo](https://github.com/Domant3lis/ADS/) and visually check with this command `clear && ./app.rb -r '~/Projects/ADS' --tags 'Task2' -c 'psp.csv' --display-csv --exclude-commits 'fd81e30a2fb136; a45d6fb8cf9f0' --include-commits 'e437c1de1ec6a0; d5f9195df212d9'`)
 
-## Architecture and extensibility
-This tool is build to be as extensible as possible, in fact main functionality of this utility is implemented **outside** the main class.
+## Extensibility
 
-Here's a short breakdown of how this works:
+Here's a short breakdown of how this tool works:
 
 First, `read_commits` iterates over all commits and puts some data into a hash: diff from parent is mapped to `'Changes'`, commit date and time to `'Date'` and the commit itself (an instance of `Git::Object::Commit`, relevant documentation [here](https://rubydoc.info/gems/git/Git/Object/Commit)) to `:itself`, the rest is done in a block passed form the caller, which gets the log itself from the block argument and is expected to to return a modified hash with all the parsed fields.
 
 Later, `filter_commits` is used to filter out commits, the argument of the block is the hash with all the commit information and it is expected to return a boolean value.
 
-The `on`, 'on_cell' and 'on_all_cells' methods checks if a hash has specified fields and if it does yields the block. While it is possible to do all same actions in the `read_commits` block, `on` family of methods makes it easier by checking if the field exists and makes it easier to separate functionality and structure the code.
+The `on`, 'on_cell' and 'on_all_cells' methods check if a hash has specified fields and if it does yields the block. While it is possible to do all same actions in the `read_commits` block, `on` family of methods makes it easier by checking if the field exists and makes it easier to separate functionality.
 
 At last, `to_csv` returns a complete csv string. `exclude` argument takes an array of keys and removes all values from the commit hash matching the keys, `preset` takes a set of keys and simply ensures the order of columns by key, `col_sep` is used to specify which character is used as a separator.
 
